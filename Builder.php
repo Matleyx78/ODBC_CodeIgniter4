@@ -184,6 +184,37 @@ class Builder extends BaseBuilder
      *
      * Generates a platform-specific batch update string from the supplied data
      */
+    protected function _updateBatch(string $table, array $keys, array $values): string
+    {
+        $ids   = [];
+        $final = [];
+
+        foreach ($values as $val) {
+            $ids[] = $val[$keys[0]]; // Usa il primo elemento di $keys come indice
+
+            foreach (array_keys($val) as $field) {
+                if ($field !== $keys[0]) {
+                    $final[$field][] = 'WHEN ' . $keys[0] . ' = ' . $val[$keys[0]] . ' THEN ' . $val[$field];
+                }
+            }
+        }
+
+        $cases = '';
+
+        foreach ($final as $k => $v) {
+            $cases .= $k . " = CASE \n"
+                . implode("\n", $v) . "\n"
+                . 'ELSE ' . $k . ' END, ';
+        }
+
+        $this->where($keys[0] . ' IN(' . implode(',', $ids) . ')', null, false);
+
+        return 'UPDATE ' . $this->compileIgnore('update') . ' ' . $this->getFullName($table) . ' SET ' . substr($cases, 0, -2) . $this->compileWhereHaving('QBWhere');
+    }
+
+
+
+/**    
     protected function _updateBatch(string $table, array $values, string $index): string
     {
         $ids   = [];
@@ -211,7 +242,7 @@ class Builder extends BaseBuilder
 
         return 'UPDATE ' . $this->compileIgnore('update') . ' ' . $this->getFullName($table) . ' SET ' . substr($cases, 0, -2) . $this->compileWhereHaving('QBWhere');
     }
-
+*/
     /**
      * Increments a numeric column by the specified value.
      *
